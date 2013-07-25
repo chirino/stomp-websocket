@@ -19,6 +19,8 @@ Byte =
   # NULL byte (octet 0)
   NULL: '\x00'
 
+MAX_FRAME_SIZE = 16*1024
+
 # ##[STOMP Frame](http://stomp.github.com/stomp-specification-1.1.html#STOMP_Frames) Class
 class Frame
   # Frame constructor
@@ -117,7 +119,12 @@ class Client
   _transmit: (command, headers, body) ->
     out = Frame.marshall(command, headers, body)
     @debug? ">>> " + out
-    @ws.send(out)
+    while(true)
+      if out.length > MAX_FRAME_SIZE 
+        @ws.send(out.substring(0, MAX_FRAME_SIZE))
+        out = out.substring(MAX_FRAME_SIZE)
+      else
+        return @ws.send(out)
 
   _setupHeartbeat: (headers) ->
     return unless headers.version in [Stomp.VERSIONS.V1_1, Stomp.VERSIONS.V1_2]
